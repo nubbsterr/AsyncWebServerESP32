@@ -13,7 +13,12 @@
 #define ENA 16
 #define STEPDELAY 100
 
-// pinouts will need to be changed to fit for the ESP32
+// pin definitions and other variables
+// bools are used to call stepX/stepY functions in loop() so they can run continuously and at the same time
+volatile bool xMotorDir { false };
+volatile bool yMotorDir { false };
+volatile bool xMotorStop { true };
+volatile bool yMotorStop { true };
 
 const int IN1_DC { 17 };               // IN1 pin to control OUT1 for DC motor (x-axis)
 const int IN2_DC { 18 };               // IN2 pin to control OUT2 for DC motor (x-axis)
@@ -127,8 +132,7 @@ void setup()
   
   // start wifi connection of esp32 to local network, 
   WiFi.begin(ssid, password);
-  Serial.print("Connecting to local network: ");
-  Serial.println(ssid);
+  Serial.print("Connecting to local network...");
 
   while (WiFi.status() != WL_CONNECTED) // not connected to wifi yet
   {
@@ -163,31 +167,29 @@ void setup()
         if (dirParam.toInt() == 2)
         {
           // shut off DC motor
-          digitalWrite(IN1_DC, LOW);
-          digitalWrite(IN2_DC, LOW);
+          xMotorStop = true;
           Serial.println("DC Motor Off!");
         }
         else
         {
           // compare val of motorParam to drive either left or right if 1 or 0
           // 1 = right, 0 = left
-          dirParam.toInt() ? stepX(1) : stepX(0);
-          Serial.print("Driving DC Motor ");
-          dirParam.toInt() ? Serial.println("Right!") : Serial.println("Left!");
+          xMotorStop = false;
+          dirParam.toInt() ? xMotorDir = true : xMotorDir = false;
         }
       }
       if (motorParam.toInt() == 1)
       {
         if (dirParam.toInt() == 2)
         {
+          yMotorStop = true;
           Serial.println("Stepper Motor Off!");
         }
         else
         {
           // 1 = cc/down, 0 = clockwise/up 
-          dirParam.toInt() ? stepY(1) : stepY(0); 
-          Serial.print("Driving Stepper Motor ");
-          dirParam.toInt() ? Serial.println("Down!") : Serial.println("Up!");
+          yMotorStop = false;
+          dirParam.toInt() ? yMotorDir = true : yMotorDir = false; 
         }
       }
     }
@@ -198,7 +200,24 @@ void setup()
   server.begin(); // starts serving web page index_html on web server
 }
 
-void loop()
+void loop() // drive motors continuously depending on request info from web server
 {
-  // loop() function to make compiler happy :)
+  if (xMotorStop) // 1 = right, 0 = left
+  {
+    digitalWrite(IN1_DC, LOW);
+    digitalWrite(IN2_DC, LOW);
+  }
+  else if (!(xMotorStop))
+  {
+    stepX(xMotorDir);
+  }
+  
+  if (yMotorStop) // 1 = cc/down, 0 = clockwise/up
+  {
+    stepY(yMotorDir);
+  }
+  else if (!(yMotorStop))
+  {
+    stepY(yMotorDir);
+  }
 }
