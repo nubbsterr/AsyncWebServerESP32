@@ -10,22 +10,22 @@
 
 // ENA is the enable pin to control DC motor speed (x-axis), set to GPIO 16
 // STEPDELAY is in milliseconds to delay stepper and DC motor
-#define ENA 16
+#define ENA 15
 #define STEPDELAY 100
 
 // pin definitions and other variables
 // bools are used to call stepX/stepY functions in loop() so they can run continuously and at the same time
-volatile bool xMotorDir { false };
-volatile bool yMotorDir { false };
+volatile bool xMotorDir { 0 };
+volatile bool yMotorDir { 0 };
 volatile bool xMotorStop { true };
 volatile bool yMotorStop { true };
 
-const int IN1_DC { 17 };               // IN1 pin to control OUT1 for DC motor (x-axis)
-const int IN2_DC { 18 };               // IN2 pin to control OUT2 for DC motor (x-axis)
+const int IN1_DC { 18 };               // IN1 pin to control OUT1 for DC motor (x-axis)
+const int IN2_DC { 19 };               // IN2 pin to control OUT2 for DC motor (x-axis)
 
 // STEP and DIRECTION pins for stepper driver for Nema 17/SM24240 motor
-const int DIR { 20 };
-const int STEP { 21 };
+const int DIR { 13 };
+const int STEP { 12 };
 
 // ssid and password for local network to host web server on, also parameters to send with GET requests to ESP
 const char* ssid { "nubblocal" };
@@ -125,10 +125,8 @@ void setup()
  
   Serial.begin(9600);
 
-  // set speed for DC motor and shut it off on startup
-  analogWrite(ENA, 150);
-  digitalWrite(IN1_DC, LOW);
-  digitalWrite(IN2_DC, LOW);
+  // set speed for DC motor
+  analogWrite(ENA, 160);
   
   // start wifi connection of esp32 to local network, 
   WiFi.begin(ssid, password);
@@ -176,6 +174,7 @@ void setup()
           // 1 = right, 0 = left
           xMotorStop = false;
           dirParam.toInt() ? xMotorDir = true : xMotorDir = false;
+          Serial.println("Moving DC Motor!");
         }
       }
       if (motorParam.toInt() == 1)
@@ -190,6 +189,7 @@ void setup()
           // 1 = cc/down, 0 = clockwise/up 
           yMotorStop = false;
           dirParam.toInt() ? yMotorDir = true : yMotorDir = false; 
+          Serial.println("Moving Stepper Motor!");
         }
       }
     }
@@ -214,7 +214,7 @@ void loop() // drive motors continuously depending on request info from web serv
   
   if (yMotorStop) // 1 = cc/down, 0 = clockwise/up
   {
-    stepY(yMotorDir);
+    ; // null statement
   }
   else if (!(yMotorStop))
   {
